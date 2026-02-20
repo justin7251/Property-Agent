@@ -7,6 +7,7 @@ import { agents, inquiries, properties } from '../../../../lib/mockData';
 
 export default function AgentDetailPage() {
   const params = useParams<{ id: string }>();
+  if (!params?.id) return <Text>Agent not found.</Text>;
   const agent = agents.find((item) => item.id === params.id);
   if (!agent) return <Text>Agent not found.</Text>;
 

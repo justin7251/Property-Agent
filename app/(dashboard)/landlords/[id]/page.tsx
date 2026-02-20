@@ -7,6 +7,7 @@ import { landlords, properties } from '../../../../lib/mockData';
 
 export default function LandlordDetailPage() {
   const params = useParams<{ id: string }>();
+  if (!params?.id) return <Text>Landlord not found.</Text>;
   const landlord = landlords.find((item) => item.id === params.id);
   if (!landlord) return <Text>Landlord not found.</Text>;
 

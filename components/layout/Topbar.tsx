@@ -1,16 +1,14 @@
 'use client';
 
-import { Box, Flex, Icon, Text } from '@chakra-ui/react';
-import { LuBell, LuChevronDown, LuMail } from 'react-icons/lu';
+import { Flex, Icon } from '@chakra-ui/react';
+import { LuBell, LuChevronDown, LuMail, LuSearch } from 'react-icons/lu';
 import InitialsAvatar from '../ui/InitialsAvatar';
 
-export default function Topbar({ title = 'Dashboard' }: { title?: string }) {
+export default function Topbar() {
   return (
-    <Flex justify="space-between" align="center" mb={5}>
-      <Text fontSize={{ base: '30px', md: '42px' }} fontWeight="800" letterSpacing="-0.02em">
-        {title}
-      </Text>
-      <Flex align="center" gap={3}>
+    <Flex justify="flex-end" align="center" mb={4}>
+      <Flex align="center" gap={4}>
+        <Icon as={LuSearch} boxSize={5} color="gray.500" />
         <Icon as={LuMail} boxSize={5} color="gray.500" />
         <Icon as={LuBell} boxSize={5} color="gray.500" />
         <Flex align="center" gap={2}>

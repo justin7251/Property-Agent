@@ -8,6 +8,7 @@ import { inquiries } from '../../../../lib/mockData';
 
 export default function InquiryDetailPage() {
   const params = useParams<{ id: string }>();
+  if (!params?.id) return <Text>Inquiry not found.</Text>;
   const inquiry = inquiries.find((item) => item.id === params.id);
   if (!inquiry) return <Text>Inquiry not found.</Text>;
 

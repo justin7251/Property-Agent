@@ -8,6 +8,7 @@ import PageHeader from '../../../../components/ui/PageHeader';
 
 export default function PropertyDetailPage() {
   const params = useParams<{ id: string }>();
+  if (!params?.id) return <Text>Property not found.</Text>;
   const property = properties.find((item) => item.id === params.id);
   if (!property) return <Text>Property not found.</Text>;
 

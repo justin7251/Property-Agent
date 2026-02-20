@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { Box, Button } from '@chakra-ui/react';
 import DataTable from '../../../components/ui/DataTable';
 import PageHeader from '../../../components/ui/PageHeader';
-import { landlords } from '../../../lib/mockData';
+import { useLandlords } from '../../../hooks/useLandlords';
 
 export default function LandlordsPage() {
+  const { landlords } = useLandlords();
   return (
     <Box>
       <PageHeader title="Landlords" action={<Link href="/landlords/new"><Button colorScheme="blue">Add Landlord</Button></Link>} />
