@@ -8,31 +8,32 @@ import { LuChartBar, LuHouse, LuLayoutDashboard, LuLogOut, LuMessageSquare, LuSe
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LuLayoutDashboard },
   { href: '/properties', label: 'Properties', icon: LuHouse },
+  { href: '/landlords', label: 'Clients', icon: LuUsers },
   { href: '/inquiries', label: 'Inquiries', icon: LuMessageSquare },
-  { href: '/agents', label: 'Agents', icon: LuUsers },
   { href: '/reports', label: 'Reports', icon: LuChartBar },
-  { href: '/settings', label: 'Settings', icon: LuSettings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <Box w={{ base: '90px', md: '220px' }} minH="100vh" bg="white" borderRight="1px solid" borderColor="gray.100" p={3} display="flex" flexDir="column">
-      <Flex align="center" h="56px" px={{ base: 0, md: 2 }} mb={4} justify={{ base: 'center', md: 'start' }}>
-        <Box display={{ base: 'none', md: 'block' }} fontWeight="800" fontSize="26px" color="#2563EB">RealEstateOS</Box>
-        <Box display={{ base: 'block', md: 'none' }} fontWeight="800" fontSize="18px" color="#2563EB">RE</Box>
+    <Box w={{ base: '88px', md: '220px' }} minH="100vh" bg="white" borderRight="1px solid" borderColor="#E5EAF1" p={3} display="flex" flexDir="column">
+      <Flex align="center" h="64px" px={{ base: 0, md: 2 }} mb={5} justify={{ base: 'center', md: 'start' }} gap={2}>
+        <Box color="#5B8FD9" fontSize="24px">⌂</Box>
+        <Box display={{ base: 'none', md: 'block' }} fontWeight="800" fontSize="32px" letterSpacing="-0.3px">REALM</Box>
       </Flex>
       {navItems.map((item) => (
         <Link href={item.href} key={item.href}>
           <Button
             w="full"
             justifyContent={{ base: 'center', md: 'start' }}
-            variant={pathname === item.href ? 'subtle' : 'ghost'}
-            colorPalette={pathname === item.href ? 'blue' : 'gray'}
+            variant="ghost"
+            bg={pathname === item.href ? '#EDF3FF' : 'transparent'}
+            color={pathname === item.href ? '#2D5FAF' : '#1F2937'}
             borderRadius="xl"
             mb={1}
             h="48px"
+            _hover={{ bg: '#EDF3FF' }}
           >
             <Flex align="center" gap={2}>
               <Icon as={item.icon} />
