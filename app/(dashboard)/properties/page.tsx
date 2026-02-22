@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Box, Button, Flex, Icon, Input, Text } from '@chakra-ui/react';
-import { LuBell, LuHeart, LuHousePlus, LuMapPin, LuSearch } from 'react-icons/lu';
+import { LuHeart, LuHousePlus, LuMapPin, LuSearch } from 'react-icons/lu';
 import { useProperties } from '../../../hooks/useProperties';
 
 export default function PropertiesPage() {

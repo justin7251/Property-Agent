@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Box, Button, Flex, Input, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Input, Select, Text } from '@chakra-ui/react';
 import PageHeader from '../../../components/ui/PageHeader';
 import { registerWithEmail } from '../../../services/firebase';
 
@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'agent' | 'landlord'>('agent');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await registerWithEmail(email, password, name);
+      await registerWithEmail(email, password, name, role);
       router.push('/dashboard');
     } catch (err) {
       setError(mapAuthError(err));
@@ -49,6 +50,11 @@ export default function RegisterPage() {
           <Input mb={3} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="agent@propestate.com" />
           <Text mb={1}>Password</Text>
           <Input mb={4} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="********" />
+          <Text mb={1}>Role</Text>
+          <Select mb={4} value={role} onChange={(e) => setRole(e.target.value as 'agent' | 'landlord')}>
+            <option value="agent">Agent</option>
+            <option value="landlord">Landlord</option>
+          </Select>
           {error ? <Text mb={3} color="red.500">{error}</Text> : null}
           <Button colorScheme="blue" w="full" mb={3} type="submit" loading={loading}>Create Account</Button>
           <Text fontSize="sm" color="gray.600">

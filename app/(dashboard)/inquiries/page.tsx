@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
-import { LuExpand, LuMessageSquare } from 'react-icons/lu';
+import { LuExpand } from 'react-icons/lu';
 import { useInquiries } from '../../../hooks/useInquiries';
 
 export default function InquiriesPage() {
