@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Box, Button, Flex, Input, Select, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Input, Text } from '@chakra-ui/react';
 import PageHeader from '../../../components/ui/PageHeader';
 import { registerWithEmail } from '../../../services/firebase';
 
@@ -51,10 +51,16 @@ export default function RegisterPage() {
           <Text mb={1}>Password</Text>
           <Input mb={4} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="********" />
           <Text mb={1}>Role</Text>
-          <Select mb={4} value={role} onChange={(e) => setRole(e.target.value as 'agent' | 'landlord')}>
+          <Box
+            as="select"
+            value={role}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRole(e.target.value as 'agent' | 'landlord')}
+            mb={4}
+            style={{ width: '100%', height: '40px', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0 10px' }}
+          >
             <option value="agent">Agent</option>
             <option value="landlord">Landlord</option>
-          </Select>
+          </Box>
           {error ? <Text mb={3} color="red.500">{error}</Text> : null}
           <Button colorScheme="blue" w="full" mb={3} type="submit" loading={loading}>Create Account</Button>
           <Text fontSize="sm" color="gray.600">

@@ -13,18 +13,41 @@ function MiniBar({ values }: { values: number[] }) {
 }
 
 export default function ReportsPage() {
-  const { revenueReports, agentPerformance } = useReports();
+  const { revenueReports, agentPerformance, inquiryConversion, occupancy, payments, maintenance, loading, error, totalRevenue } = useReports();
   const salesValues = revenueReports.map((r) => Math.round(r.revenue / 3000));
   const rentalValues = revenueReports.map((r) => Math.round(r.expenses / 3000));
+
+  if (loading) {
+    return (
+      <Box>
+        <Text fontSize="48px" fontWeight="800" mb={4}>Unified Performance Reports</Text>
+        <Text color="gray.600">Loading report data...</Text>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box>
+        <Text fontSize="48px" fontWeight="800" mb={4}>Unified Performance Reports</Text>
+        <Box p={3} borderRadius="md" bg="#fee2e2" color="#991b1b" border="1px solid #fecaca">
+          {error}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Text fontSize="48px" fontWeight="800" mb={4}>Unified Performance Reports</Text>
       <Text fontSize="40px" fontWeight="700" mb={3}>Properties Overview</Text>
       <Flex gap={3} direction={{ base: 'column', md: 'row' }} mb={4}>
         {[
-          { label: 'Total Revenue', value: '$4.5M' },
-          { label: 'Properties Sold', value: '124' },
-          { label: 'New Inquiries', value: '892' },
+          { label: 'Total Revenue', value: `$${Math.round(totalRevenue).toLocaleString()}` },
+          { label: 'Occupancy Rate', value: `${occupancy?.occupancyRate ?? 0}%` },
+          { label: 'Inquiry Conversion', value: `${inquiryConversion?.conversionRate ?? 0}%` },
+          { label: 'Payments Collected', value: `$${Math.round(payments?.collectedAmount ?? 0).toLocaleString()}` },
+          { label: 'Maintenance Avg (hrs)', value: `${maintenance?.averageTurnaroundHours ?? 0}` },
         ].map((s) => (
           <Box key={s.label} flex="1" bg="white" border="1px solid" borderColor="#bde8dc" borderRadius="2xl" p={4}>
             <Text color="gray.600">{s.label}</Text>
