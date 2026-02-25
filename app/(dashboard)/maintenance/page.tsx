@@ -9,7 +9,23 @@ const STATUS_STEPS: MaintenanceStatus[] = ['new', 'assigned', 'in_progress', 'co
 const PRIORITY_OPTIONS: MaintenancePriority[] = ['low', 'medium', 'high', 'critical'];
 
 export default function MaintenancePage() {
-  const { requests, assignees, loading, saving, error, setError, createRequest, assignRequest, updateStatus } = useMaintenance();
+  const {
+    requests,
+    assignees,
+    hasMoreRequests,
+    hasMoreUsers,
+    loading,
+    loadingMore,
+    loadingMoreUsers,
+    saving,
+    error,
+    setError,
+    createRequest,
+    assignRequest,
+    updateStatus,
+    loadMoreRequests,
+    loadMoreUsers,
+  } = useMaintenance();
   const [propertyId, setPropertyId] = useState('');
   const [propertyTitle, setPropertyTitle] = useState('');
   const [title, setTitle] = useState('');
@@ -115,7 +131,14 @@ export default function MaintenancePage() {
       </Box>
 
       <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="2xl" p={4}>
-        <Text fontWeight="700" mb={3}>Maintenance Queue</Text>
+        <Flex justify="space-between" align="center" mb={3}>
+          <Text fontWeight="700">Maintenance Queue</Text>
+          {hasMoreUsers ? (
+            <Button size="xs" variant="outline" onClick={loadMoreUsers} loading={loadingMoreUsers}>
+              Load More Assignees
+            </Button>
+          ) : null}
+        </Flex>
         {loading ? (
           <Spinner />
         ) : (
@@ -178,6 +201,13 @@ export default function MaintenancePage() {
             </Box>
           </Box>
         )}
+        {hasMoreRequests ? (
+          <Flex justify="center" mt={4}>
+            <Button variant="outline" onClick={loadMoreRequests} loading={loadingMore}>
+              Load More Requests
+            </Button>
+          </Flex>
+        ) : null}
       </Box>
     </Box>
   );

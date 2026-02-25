@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../../../lib/server/firebaseAdmin';
-import { requireServerAuthContext } from '../../../../../lib/server/requestAuth';
+import {
+  enforceRateLimit,
+  parseString,
+  readJsonBody,
+  requireBearerAuth,
+  securityErrorResponse,
+  validateRequestSchema,
+} from '../../../../../lib/server/security';
 
 export const runtime = 'nodejs';
 
@@ -14,12 +21,13 @@ function normalizeEmail(value: unknown): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const actor = await requireServerAuthContext(request);
-    const payload = (await request.json()) as AcceptInvitationPayload;
-    const token = typeof payload.token === 'string' ? payload.token.trim() : '';
-    if (!token) {
-      return NextResponse.json({ error: 'Invitation token is required.' }, { status: 400 });
-    }
+    const actor = await requireBearerAuth(request);
+    enforceRateLimit(request, { routeKey: 'auth_invitation_accept', limit: 20, windowMs: 60_000, actor });
+    const payload = await readJsonBody<AcceptInvitationPayload>(request);
+    const parsed = validateRequestSchema(payload, {
+      token: { required: true, parse: (value) => parseString(value), message: 'Invitation token is required.' },
+    });
+    const token = parsed.token;
 
     const invitationRef = adminDb().collection('invitations').doc(token);
     const invitationSnap = await invitationRef.get();
@@ -63,8 +71,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to accept invitation.';
-    const status = message.includes('Missing bearer token') ? 401 : 400;
-    return NextResponse.json({ error: message }, { status });
+    return securityErrorResponse(error, 'Failed to accept invitation.');
   }
 }

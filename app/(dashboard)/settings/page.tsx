@@ -5,7 +5,7 @@ import { Box, Button, Flex, Input, Spinner, Text } from '@chakra-ui/react';
 import type { CompanySettingsPatch } from '../../../types/companySettings';
 import {
   getCompanySettings,
-  getCompanyUsers,
+  getCompanyUsersPage,
   inviteUser,
   type CompanyUserRole,
   type CompanyUserSummary,
@@ -39,6 +39,9 @@ export default function SettingsPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [teamUsers, setTeamUsers] = useState<CompanyUserSummary[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(true);
+  const [loadingMoreTeam, setLoadingMoreTeam] = useState(false);
+  const [teamCursor, setTeamCursor] = useState<string | null>(null);
+  const [hasMoreTeam, setHasMoreTeam] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<CompanyUserRole>('agent');
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -83,8 +86,12 @@ export default function SettingsPage() {
     void (async () => {
       setLoadingTeam(true);
       try {
-        const users = await getCompanyUsers();
-        if (!cancelled) setTeamUsers(users);
+        const users = await getCompanyUsersPage({ pageSize: 25 });
+        if (!cancelled) {
+          setTeamUsers(users.items);
+          setTeamCursor(users.nextCursor);
+          setHasMoreTeam(users.hasMore);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to load team users.');
@@ -97,6 +104,21 @@ export default function SettingsPage() {
       cancelled = true;
     };
   }, []);
+
+  async function loadMoreTeamUsers() {
+    if (!teamCursor || !hasMoreTeam || loadingMoreTeam) return;
+    setLoadingMoreTeam(true);
+    try {
+      const page = await getCompanyUsersPage({ pageSize: 25, cursor: teamCursor });
+      setTeamUsers((prev) => [...prev, ...page.items]);
+      setTeamCursor(page.nextCursor);
+      setHasMoreTeam(page.hasMore);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load more team users.');
+    } finally {
+      setLoadingMoreTeam(false);
+    }
+  }
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -150,8 +172,10 @@ export default function SettingsPage() {
     setSuccess(null);
     try {
       await updateUserRoleServer(userId, role);
-      const users = await getCompanyUsers();
-      setTeamUsers(users);
+      const users = await getCompanyUsersPage({ pageSize: 25 });
+      setTeamUsers(users.items);
+      setTeamCursor(users.nextCursor);
+      setHasMoreTeam(users.hasMore);
       setSuccess('User role updated.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update role.');
@@ -290,8 +314,9 @@ export default function SettingsPage() {
         {loadingTeam ? (
           <Spinner />
         ) : (
-          <Box overflowX="auto">
-            <Box as="table" w="100%" style={{ borderCollapse: 'collapse' }}>
+          <>
+            <Box overflowX="auto">
+              <Box as="table" w="100%" style={{ borderCollapse: 'collapse' }}>
               <Box as="thead">
                 <Box as="tr">
                   {['Name', 'Email', 'Role', 'Action'].map((header) => (
@@ -334,8 +359,16 @@ export default function SettingsPage() {
                   </Box>
                 ) : null}
               </Box>
+              </Box>
             </Box>
-          </Box>
+            {hasMoreTeam ? (
+              <Box mt={4}>
+                <Button variant="outline" onClick={loadMoreTeamUsers} loading={loadingMoreTeam}>
+                  Load More Team Users
+                </Button>
+              </Box>
+            ) : null}
+          </>
         )}
       </Box>
     </Box>

@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assertCanAssignRole, assertCanPerform } from '../../../../../lib/auth/policy';
 import type { AppRole, CompanyRole } from '../../../../../lib/auth/tenantContext';
 import { adminDb } from '../../../../../lib/server/firebaseAdmin';
-import { requireServerAuthContext } from '../../../../../lib/server/requestAuth';
+import {
+  enforceRateLimit,
+  parseEmail,
+  readJsonBody,
+  requireBearerAuth,
+  securityErrorResponse,
+  validateRequestSchema,
+} from '../../../../../lib/server/security';
 
 export const runtime = 'nodejs';
 
@@ -18,25 +25,19 @@ function parseCompanyRole(value: unknown): CompanyRole | null {
   return null;
 }
 
-function normalizeEmail(value: unknown): string {
-  return typeof value === 'string' ? value.toLowerCase().trim() : '';
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const actor = await requireServerAuthContext(request);
+    const actor = await requireBearerAuth(request);
     assertCanPerform(actor, 'user.role.assign');
+    enforceRateLimit(request, { routeKey: 'admin_invite_create', limit: 15, windowMs: 60_000, actor });
 
-    const payload = (await request.json()) as CreateInvitationPayload;
-    const email = normalizeEmail(payload.email);
-    const role = parseCompanyRole(payload.role);
-
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Valid email is required.' }, { status: 400 });
-    }
-    if (!role) {
-      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
-    }
+    const payload = await readJsonBody<CreateInvitationPayload>(request);
+    const parsed = validateRequestSchema(payload, {
+      email: { required: true, parse: (value) => parseEmail(value), message: 'Valid email is required.' },
+      role: { required: true, parse: (value) => parseCompanyRole(value), message: 'Invalid role.' },
+    });
+    const email = parsed.email;
+    const role = parsed.role;
 
     assertCanAssignRole(actor, role as AppRole);
 
@@ -66,8 +67,6 @@ export async function POST(request: NextRequest) {
       inviteUrl,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create invitation.';
-    const status = message.includes('Missing bearer token') ? 401 : message.includes('Forbidden') ? 403 : 400;
-    return NextResponse.json({ error: message }, { status });
+    return securityErrorResponse(error, 'Failed to create invitation.');
   }
 }

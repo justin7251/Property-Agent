@@ -7,7 +7,7 @@ import PageHeader from '../../../components/ui/PageHeader';
 import { useLandlords } from '../../../hooks/useLandlords';
 
 export default function LandlordsPage() {
-  const { landlords } = useLandlords();
+  const { landlords, hasMore, loadMore, loadingMore } = useLandlords();
   return (
     <Box>
       <PageHeader title="Landlords" action={<Link href="/landlords/new"><Button colorScheme="blue">Add Landlord</Button></Link>} />
@@ -21,6 +21,13 @@ export default function LandlordsPage() {
         ]}
         data={landlords}
       />
+      {hasMore ? (
+        <Box mt={4}>
+          <Button variant="outline" onClick={loadMore} loading={loadingMore}>
+            Load More Landlords
+          </Button>
+        </Box>
+      ) : null}
     </Box>
   );
 }

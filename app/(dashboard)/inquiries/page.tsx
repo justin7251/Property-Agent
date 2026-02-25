@@ -1,11 +1,33 @@
 'use client';
 
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
 import { LuExpand } from 'react-icons/lu';
 import { useInquiries } from '../../../hooks/useInquiries';
+import type { InquiryStatus } from '../../../types/inquiry';
 
 export default function InquiriesPage() {
-  const { filtered } = useInquiries();
+  const { filtered, hasMore, loadMore, loadingMore, status, setStatus } = useInquiries();
+  const [daysFilter, setDaysFilter] = useState<'all' | '7' | '30' | '90'>('30');
+  const [archivedIds, setArchivedIds] = useState<Record<string, boolean>>({});
+  const [referenceNow] = useState(() => Date.now());
+
+  const visible = useMemo(() => {
+    const days = daysFilter === 'all' ? null : Number(daysFilter);
+    return filtered.filter((row) => {
+      if (archivedIds[row.id]) return false;
+      if (!days) return true;
+      const ts = Date.parse(row.date);
+      if (Number.isNaN(ts)) return true;
+      return referenceNow - ts <= days * 24 * 60 * 60 * 1000;
+    });
+  }, [filtered, daysFilter, archivedIds, referenceNow]);
+
+  function archive(rowId: string) {
+    setArchivedIds((prev) => ({ ...prev, [rowId]: true }));
+  }
+
   return (
     <Box>
       <Text fontSize="48px" fontWeight="800" mb={2}>Inquiries</Text>
@@ -47,8 +69,20 @@ export default function InquiriesPage() {
           <Flex justify="space-between" align="center" mb={2}>
             <Text fontSize="40px" fontWeight="700">Recent Inquiries</Text>
             <Flex gap={2}>
-              <Box as="select" border="1px solid" borderColor="blue.200" borderRadius="lg" px={2}><option>Status: All</option></Box>
-              <Box as="select" border="1px solid" borderColor="gray.200" borderRadius="lg" px={2}><option>This Month</option></Box>
+              <Box as="select" border="1px solid" borderColor="blue.200" borderRadius="lg" px={2} value={status} onChange={(e) => setStatus(e.target.value as 'all' | InquiryStatus)}>
+                <option value="all">Status: All</option>
+                <option value="new">New</option>
+                <option value="approved">Approved</option>
+                <option value="contacted">Contacted</option>
+                <option value="rejected">Rejected</option>
+                <option value="converted">Converted</option>
+              </Box>
+              <Box as="select" border="1px solid" borderColor="gray.200" borderRadius="lg" px={2} value={daysFilter} onChange={(e) => setDaysFilter(e.target.value as 'all' | '7' | '30' | '90')}>
+                <option value="7">Last 7 Days</option>
+                <option value="30">Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="all">All Time</option>
+              </Box>
               <Button variant="outline" colorPalette="blue">Export</Button>
             </Flex>
           </Flex>
@@ -61,7 +95,7 @@ export default function InquiriesPage() {
               </Box>
             </Box>
             <Box as="tbody">
-              {filtered.slice(0, 7).map((row) => (
+              {visible.map((row) => (
                 <Box as="tr" key={row.id}>
                   <Box as="td" py={2} px={2} borderTop="1px solid" borderColor="gray.100">{row.clientName}</Box>
                   <Box as="td" py={2} px={2} borderTop="1px solid" borderColor="gray.100">{row.propertyTitle}</Box>
@@ -71,14 +105,23 @@ export default function InquiriesPage() {
                   </Box>
                   <Box as="td" py={2} px={2} borderTop="1px solid" borderColor="gray.100">
                     <Flex gap={2}>
-                      <Button size="xs" variant="outline" colorPalette="blue">View Details</Button>
-                      <Button size="xs" variant="outline" colorPalette="blue">View Archive</Button>
+                      <Link href={`/inquiries/${row.id}`}>
+                        <Button size="xs" variant="outline" colorPalette="blue">View Details</Button>
+                      </Link>
+                      <Button size="xs" variant="outline" colorPalette="blue" onClick={() => archive(row.id)}>Archive</Button>
                     </Flex>
                   </Box>
                 </Box>
               ))}
             </Box>
           </Box>
+          {hasMore ? (
+            <Flex justify="center" mt={4}>
+              <Button variant="outline" onClick={loadMore} loading={loadingMore}>
+                Load More Inquiries
+              </Button>
+            </Flex>
+          ) : null}
         </Box>
       </Flex>
     </Box>

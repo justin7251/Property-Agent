@@ -1,21 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertCanPerform } from '../../../../lib/auth/policy';
 import { adminDb } from '../../../../lib/server/firebaseAdmin';
+import { requireCompanyApiKey } from '../../../../lib/server/companyApiKeys.mjs';
 import { readIdempotentResponse, writeIdempotentResponse } from '../../../../lib/server/idempotency';
 import { processUsersImport } from '../../../../lib/server/importProcessors.mjs';
-import { requireServerAuthContext } from '../../../../lib/server/requestAuth';
+import {
+  enforceRateLimit,
+  getRequestIdempotencyKey,
+  parseString,
+  readJsonBody,
+  securityErrorResponse,
+  validateRequestSchema,
+} from '../../../../lib/server/security';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const actor = await requireServerAuthContext(request);
-    assertCanPerform(actor, 'user.role.assign');
+    const keyContext = await requireCompanyApiKey(request, 'import.users');
+    enforceRateLimit(request, {
+      routeKey: 'users_import',
+      limit: 20,
+      windowMs: 60_000,
+      actor: { userId: `key:${keyContext.keyId}`, companyId: keyContext.companyId, role: 'owner' },
+    });
 
-    const payload = await request.json();
+    const payload = await readJsonBody<Record<string, unknown>>(request);
+    const baseline = validateRequestSchema(payload, {
+      rows: { required: true, parse: (value) => (Array.isArray(value) ? value : []), message: 'rows must be a non-empty array.' },
+      idempotencyKey: { required: false, parse: (value) => parseString(value), message: 'Invalid idempotency key.' },
+    });
+    const idempotencyKey = getRequestIdempotencyKey(request, payload);
     const response = await processUsersImport({
-      actor,
-      payload,
+      actor: {
+        userId: `api_key:${keyContext.keyId}`,
+        companyId: keyContext.companyId,
+        role: 'owner',
+        isPlatformSuperadmin: false,
+      },
+      payload: {
+        rows: baseline.rows,
+        idempotencyKey: idempotencyKey || baseline.idempotencyKey || undefined,
+        importedByKeyId: keyContext.keyId,
+      },
       deps: {
         readIdempotentResponse,
         writeIdempotentResponse,
@@ -24,7 +50,11 @@ export async function POST(request: NextRequest) {
           return { exists: snap.exists, data: (snap.data() as Record<string, unknown>) || {} };
         },
         setDoc: async (path: string, id: string, data: Record<string, unknown>, options?: { merge?: boolean }) => {
-          await adminDb().collection(path).doc(id).set(data, options);
+          if (options) {
+            await adminDb().collection(path).doc(id).set(data, options);
+            return;
+          }
+          await adminDb().collection(path).doc(id).set(data);
         },
         addDoc: async (path: string, data: Record<string, unknown>) => {
           const ref = await adminDb().collection(path).add(data);
@@ -38,9 +68,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(response.payload, { status: response.status });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to import users.';
-    const status = message.includes('Missing bearer token') ? 401 : message.includes('Forbidden') ? 403 : 400;
-    return NextResponse.json({ error: message }, { status });
+    return securityErrorResponse(error, 'Failed to import users.');
   }
 }
 

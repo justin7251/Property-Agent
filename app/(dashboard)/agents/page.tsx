@@ -1,11 +1,19 @@
 'use client';
 
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
 import { LuFilter, LuMail, LuPlus, LuStar } from 'react-icons/lu';
 import { useAgents } from '../../../hooks/useAgents';
 
 export default function AgentsPage() {
-  const { filtered } = useAgents();
+  const { filtered, hasMore, loadMore, loadingMore } = useAgents();
+  const [topOnly, setTopOnly] = useState(false);
+  const visible = useMemo(
+    () => (topOnly ? filtered.filter((agent) => agent.totalSales >= 500000) : filtered),
+    [filtered, topOnly]
+  );
+
   return (
     <Box>
       <Text fontSize="48px" fontWeight="800" mb={2}>Agents</Text>
@@ -26,13 +34,18 @@ export default function AgentsPage() {
           ))}
         </Flex>
         <Flex gap={2}>
-          <Button variant="outline"><Icon as={LuFilter} />Filter</Button>
-          <Button colorScheme="blue"><Icon as={LuPlus} />Add New Agent</Button>
+          <Button variant="outline" onClick={() => setTopOnly((prev) => !prev)}>
+            <Icon as={LuFilter} />
+            {topOnly ? 'All Agents' : 'Top Performers'}
+          </Button>
+          <Link href="/agents/new">
+            <Button colorScheme="blue"><Icon as={LuPlus} />Add New Agent</Button>
+          </Link>
         </Flex>
       </Flex>
 
       <Box display="grid" gap={4} gridTemplateColumns={{ base: '1fr', md: 'repeat(2,minmax(0,1fr))', xl: 'repeat(4,minmax(0,1fr))' }}>
-        {filtered.slice(0, 7).map((agent, index) => (
+        {visible.map((agent, index) => (
           <Box key={agent.id} bg="white" border="1px solid" borderColor={index < 3 ? '#e7ce70' : 'gray.200'} borderRadius="2xl" p={4}>
             <Flex justify="space-between">
               <Box w="88px" h="88px" borderRadius="full" bg="linear-gradient(135deg,#dbeafe,#bfdbfe)" />
@@ -46,8 +59,12 @@ export default function AgentsPage() {
               <Box><Text fontSize="xs" color="gray.500">LISTINGS</Text><Text fontWeight="700">{agent.activeListings}</Text></Box>
             </Flex>
             <Flex justify="space-between" color="gray.600">
-              <Icon as={LuMail} />
-              <Text color="blue.600" fontWeight="600">View Profile</Text>
+              <Link href={`mailto:${encodeURIComponent(agent.email)}`}>
+                <Icon as={LuMail} />
+              </Link>
+              <Link href={`/agents/${agent.id}`}>
+                <Text color="blue.600" fontWeight="600">View Profile</Text>
+              </Link>
             </Flex>
           </Box>
         ))}
@@ -57,6 +74,13 @@ export default function AgentsPage() {
           <Text color="gray.600" textAlign="center">Onboard a new team member to your agency.</Text>
         </Box>
       </Box>
+      {hasMore ? (
+        <Flex justify="center" mt={5}>
+          <Button variant="outline" onClick={loadMore} loading={loadingMore}>
+            Load More Agents
+          </Button>
+        </Flex>
+      ) : null}
     </Box>
   );
 }
