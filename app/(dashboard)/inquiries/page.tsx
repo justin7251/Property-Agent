@@ -8,6 +8,7 @@ import { auth, createInquiry, createMaintenanceRequest, updateInquiry } from '..
 import { useInquiries } from '../../../hooks/useInquiries';
 import type { Inquiry, InquiryStatus, MaintenanceDecision } from '../../../types/inquiry';
 import type { MaintenancePriority } from '../../../types/maintenance';
+import PopupDialog from '../../../components/ui/PopupDialog';
 
 type ViewMode = 'inbox' | 'follow_up' | 'converted' | 'archived';
 type OwnerMode = 'team' | 'mine' | 'unassigned';
@@ -37,6 +38,7 @@ function getMaintenancePriority(row: Inquiry, ageDays: number): MaintenancePrior
 export default function InquiriesPage() {
   const { inquiries, setInquiries, hasMore, loadMore, loadingMore, status, setStatus } = useInquiries();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingInquiry, setEditingInquiry] = useState<Inquiry | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [draftInquiry, setDraftInquiry] = useState({
@@ -46,6 +48,7 @@ export default function InquiriesPage() {
     propertyTitle: '',
     agentId: '',
     message: '',
+    status: 'new' as InquiryStatus,
   });
   const [view, setView] = useState<ViewMode>('inbox');
   const [ownerMode, setOwnerMode] = useState<OwnerMode>('team');
@@ -172,7 +175,43 @@ export default function InquiriesPage() {
     await applyPatch(row.id, { inquiryType: 'maintenance', maintenanceScheduledAt: iso });
   }
 
-  async function submitNewInquiry() {
+  function openCreateForm() {
+    setDraftInquiry({
+      clientName: '',
+      clientEmail: '',
+      propertyId: '',
+      propertyTitle: '',
+      agentId: '',
+      message: '',
+      status: 'new',
+    });
+    setCreateError(null);
+    setEditingInquiry(null);
+    setShowCreateForm(true);
+  }
+
+  function openEditForm(row: Inquiry) {
+    setDraftInquiry({
+      clientName: row.clientName,
+      clientEmail: row.clientEmail,
+      propertyId: row.propertyId,
+      propertyTitle: row.propertyTitle,
+      agentId: row.agentId,
+      message: row.message,
+      status: row.status,
+    });
+    setCreateError(null);
+    setShowCreateForm(false);
+    setEditingInquiry(row);
+  }
+
+  function closeFormDialog() {
+    setShowCreateForm(false);
+    setEditingInquiry(null);
+    setCreateError(null);
+  }
+
+  async function submitInquiryForm() {
     if (creating) return;
     setCreateError(null);
     const payload = {
@@ -182,6 +221,7 @@ export default function InquiriesPage() {
       propertyTitle: draftInquiry.propertyTitle.trim(),
       agentId: draftInquiry.agentId.trim(),
       message: draftInquiry.message.trim(),
+      status: draftInquiry.status,
     };
     if (!payload.clientName || !payload.clientEmail || !payload.propertyId || !payload.propertyTitle || !payload.agentId || !payload.message) {
       setCreateError('All fields are required.');
@@ -189,18 +229,21 @@ export default function InquiriesPage() {
     }
     setCreating(true);
     try {
-      const now = new Date().toISOString();
-      const id = await createInquiry({
-        ...payload,
-        inquiryType: 'lead',
-        status: 'new',
-        date: now,
-      });
-      setInquiries((rows) => [{ id, ...payload, inquiryType: 'lead', status: 'new', date: now }, ...rows]);
-      setDraftInquiry({ clientName: '', clientEmail: '', propertyId: '', propertyTitle: '', agentId: '', message: '' });
-      setShowCreateForm(false);
+      if (editingInquiry) {
+        await updateInquiry(editingInquiry.id, payload);
+        setInquiries((rows) => rows.map((row) => (row.id === editingInquiry.id ? { ...row, ...payload } : row)));
+      } else {
+        const now = new Date().toISOString();
+        const id = await createInquiry({
+          ...payload,
+          inquiryType: 'lead',
+          date: now,
+        });
+        setInquiries((rows) => [{ id, ...payload, inquiryType: 'lead', date: now }, ...rows]);
+      }
+      closeFormDialog();
     } catch (error) {
-      setCreateError(error instanceof Error ? error.message : 'Failed to create inquiry.');
+      setCreateError(error instanceof Error ? error.message : 'Failed to save inquiry.');
     } finally {
       setCreating(false);
     }
@@ -210,30 +253,10 @@ export default function InquiriesPage() {
     <Box>
       <Flex justify="space-between" align="center" mb={2} wrap="wrap" gap={2}>
         <Text fontSize="48px" fontWeight="800">Inquiries</Text>
-        <Button colorPalette="blue" onClick={() => setShowCreateForm((prev) => !prev)}>
-          {showCreateForm ? 'Close' : 'Add Inquiry'}
+        <Button colorPalette="blue" onClick={openCreateForm}>
+          Add Inquiry
         </Button>
       </Flex>
-
-      {showCreateForm ? (
-        <Box bg="white" border="1px solid" borderColor="blue.100" borderRadius="2xl" p={4} mb={4}>
-          <Text fontSize="lg" fontWeight="700" mb={3}>Create Inquiry</Text>
-          <Flex gap={2} direction={{ base: 'column', md: 'row' }} mb={2}>
-            <Input placeholder="Client Name" value={draftInquiry.clientName} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, clientName: e.target.value }))} />
-            <Input placeholder="Client Email" value={draftInquiry.clientEmail} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, clientEmail: e.target.value }))} />
-          </Flex>
-          <Flex gap={2} direction={{ base: 'column', md: 'row' }} mb={2}>
-            <Input placeholder="Property ID" value={draftInquiry.propertyId} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, propertyId: e.target.value }))} />
-            <Input placeholder="Property Title" value={draftInquiry.propertyTitle} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, propertyTitle: e.target.value }))} />
-            <Input placeholder="Assign Agent ID" value={draftInquiry.agentId} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, agentId: e.target.value }))} />
-          </Flex>
-          <Textarea placeholder="Inquiry Message" value={draftInquiry.message} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, message: e.target.value }))} mb={2} />
-          {createError ? <Text color="red.600" fontSize="sm" mb={2}>{createError}</Text> : null}
-          <Flex justify="flex-end">
-            <Button colorPalette="blue" onClick={submitNewInquiry} loading={creating}>Create Inquiry</Button>
-          </Flex>
-        </Box>
-      ) : null}
 
       <Flex gap={3} direction={{ base: 'column', md: 'row' }} mb={4}>
         {[
@@ -402,6 +425,9 @@ export default function InquiriesPage() {
                       <Button size="xs" variant="outline" onClick={() => applyPatch(row.id, { status: 'contacted' })} loading={savingId === row.id}>
                         Contacted
                       </Button>
+                      <Button size="xs" variant="outline" onClick={() => openEditForm(row)}>
+                        Edit
+                      </Button>
                       <Link href={`/inquiries/${row.id}`}>
                         <Button size="xs" variant="outline" colorPalette="blue">Details</Button>
                       </Link>
@@ -422,6 +448,35 @@ export default function InquiriesPage() {
           </Flex>
         ) : null}
       </Box>
+
+      <PopupDialog isOpen={showCreateForm || !!editingInquiry} title={editingInquiry ? 'Edit Inquiry' : 'Add New Inquiry'} onClose={closeFormDialog}>
+        <Box>
+          <Flex gap={2} direction={{ base: 'column', md: 'row' }} mb={2}>
+            <Input placeholder="Client Name" value={draftInquiry.clientName} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, clientName: e.target.value }))} />
+            <Input placeholder="Client Email" value={draftInquiry.clientEmail} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, clientEmail: e.target.value }))} />
+          </Flex>
+          <Flex gap={2} direction={{ base: 'column', md: 'row' }} mb={2}>
+            <Input placeholder="Property ID" value={draftInquiry.propertyId} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, propertyId: e.target.value }))} />
+            <Input placeholder="Property Title" value={draftInquiry.propertyTitle} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, propertyTitle: e.target.value }))} />
+            <Input placeholder="Assign Agent ID" value={draftInquiry.agentId} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, agentId: e.target.value }))} />
+          </Flex>
+          <Box as="select" w="100%" border="1px solid" borderColor="gray.200" borderRadius="md" px={3} py={2} mb={2} value={draftInquiry.status} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, status: e.target.value as InquiryStatus }))}>
+            <option value="new">new</option>
+            <option value="approved">approved</option>
+            <option value="contacted">contacted</option>
+            <option value="rejected">rejected</option>
+            <option value="converted">converted</option>
+          </Box>
+          <Textarea placeholder="Inquiry Message" value={draftInquiry.message} onChange={(e) => setDraftInquiry((prev) => ({ ...prev, message: e.target.value }))} mb={2} />
+          {createError ? <Text color="red.600" fontSize="sm" mb={2}>{createError}</Text> : null}
+          <Flex justify="flex-end" gap={2}>
+            <Button variant="outline" onClick={closeFormDialog}>Cancel</Button>
+            <Button colorPalette="blue" onClick={submitInquiryForm} loading={creating}>
+              {editingInquiry ? 'Save Changes' : 'Create Inquiry'}
+            </Button>
+          </Flex>
+        </Box>
+      </PopupDialog>
     </Box>
   );
 }

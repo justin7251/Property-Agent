@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { DM_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
 import Providers from './providers';
+import { validateAppEnv } from '../lib/server/envValidation';
 
 const dmSans = DM_Sans({ subsets: ['latin'] });
 
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  validateAppEnv();
+
   return (
     <html lang="en">
       <body className={dmSans.className}>

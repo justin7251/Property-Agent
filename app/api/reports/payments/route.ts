@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertCanReadReports, getPaymentsReport, parseReportDateRange } from '../../../../lib/server/reporting';
 import { requireServerAuthContext } from '../../../../lib/server/requestAuth';
+import { reportErrorStatus } from '../_errorStatus';
 
 export const runtime = 'nodejs';
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data, filters });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load payments report.';
-    const status = message.includes('Missing bearer token') ? 401 : message.includes('Forbidden') ? 403 : 400;
+    const status = reportErrorStatus(message);
     return NextResponse.json({ error: message }, { status });
   }
 }

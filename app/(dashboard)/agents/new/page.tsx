@@ -1,14 +1,19 @@
 'use client';
 
-import { Box } from '@chakra-ui/react';
-import AgentForm from '../../../../components/agents/AgentForm';
-import PageHeader from '../../../../components/ui/PageHeader';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Box, Text } from '@chakra-ui/react';
 
 export default function NewAgentPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/agents');
+  }, [router]);
+
   return (
     <Box>
-      <PageHeader title="Add Agent" subtitle="Create a new agent profile" />
-      <AgentForm />
+      <Text color="gray.600">Redirecting to Agents...</Text>
     </Box>
   );
 }

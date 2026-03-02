@@ -1,14 +1,19 @@
 'use client';
 
-import { Box } from '@chakra-ui/react';
-import PropertyForm from '../../../../components/properties/PropertyForm';
-import PageHeader from '../../../../components/ui/PageHeader';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Box, Text } from '@chakra-ui/react';
 
 export default function NewPropertyPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/properties');
+  }, [router]);
+
   return (
     <Box>
-      <PageHeader title="New Property" subtitle="Create a property listing" />
-      <PropertyForm />
+      <Text color="gray.600">Redirecting to Properties...</Text>
     </Box>
   );
 }

@@ -13,7 +13,7 @@ function MiniBar({ values }: { values: number[] }) {
 }
 
 export default function ReportsPage() {
-  const { revenueReports, agentPerformance, inquiryConversion, occupancy, payments, maintenance, loading, error, totalRevenue } = useReports();
+  const { revenueReports, agentPerformance, inquiryConversion, occupancy, payments, maintenance, loading, error, totalRevenue, dataSource } = useReports();
   const salesValues = revenueReports.map((r) => Math.round(r.revenue / 3000));
   const rentalValues = revenueReports.map((r) => Math.round(r.expenses / 3000));
 
@@ -39,7 +39,14 @@ export default function ReportsPage() {
 
   return (
     <Box>
-      <Text fontSize="48px" fontWeight="800" mb={4}>Unified Performance Reports</Text>
+      <Flex align="center" gap={2} mb={4} wrap="wrap">
+        <Text fontSize="48px" fontWeight="800">Unified Performance Reports</Text>
+        {dataSource === 'client_fallback' ? (
+          <Box px={3} py={1} borderRadius="full" bg="#fef3c7" color="#92400e" border="1px solid #fcd34d" fontSize="sm" fontWeight="700">
+            Client Fallback Mode
+          </Box>
+        ) : null}
+      </Flex>
       <Text fontSize="40px" fontWeight="700" mb={3}>Properties Overview</Text>
       <Flex gap={3} direction={{ base: 'column', md: 'row' }} mb={4}>
         {[

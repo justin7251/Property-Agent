@@ -5,12 +5,31 @@ import Link from 'next/link';
 import { Box, Button, Flex, Icon, Input, Text } from '@chakra-ui/react';
 import { LuHeart, LuHousePlus, LuMapPin, LuSearch } from 'react-icons/lu';
 import { useProperties } from '../../../hooks/useProperties';
+import { createProperty, updateProperty } from '../../../services/firebase';
+import type { Property } from '../../../types/property';
+import PopupDialog from '../../../components/ui/PopupDialog';
 
 export default function PropertiesPage() {
-  const { filtered, query, setQuery, hasMore, loadMore, loadingMore } = useProperties();
+  const { filtered, setProperties, query, setQuery, hasMore, loadMore, loadingMore } = useProperties();
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [typeFilter, setTypeFilter] = useState<'all' | 'condo' | 'apartment' | 'house' | 'office'>('all');
   const [priceRange, setPriceRange] = useState<'all' | 'under-2k' | '2k-4k' | '4k-plus'>('all');
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [draft, setDraft] = useState({
+    title: '',
+    address: '',
+    price: '2500',
+    type: 'condo' as 'condo' | 'apartment' | 'house' | 'office',
+    bedrooms: '1',
+    bathrooms: '1',
+    sqft: '700',
+    status: 'available' as 'available' | 'rented' | 'under_review' | 'off_market',
+    agentId: 'a1',
+    landlordId: 'l1',
+  });
 
   const visible = useMemo(() => {
     return filtered.filter((property) => {
@@ -26,6 +45,95 @@ export default function PropertiesPage() {
 
   function toggleFavorite(propertyId: string) {
     setFavorites((prev) => ({ ...prev, [propertyId]: !prev[propertyId] }));
+  }
+
+  function openAdd() {
+    setDraft({
+      title: '',
+      address: '',
+      price: '2500',
+      type: 'condo',
+      bedrooms: '1',
+      bathrooms: '1',
+      sqft: '700',
+      status: 'available',
+      agentId: 'a1',
+      landlordId: 'l1',
+    });
+    setFormError(null);
+    setEditingProperty(null);
+    setIsAddOpen(true);
+  }
+
+  function openEdit(property: Property) {
+    setDraft({
+      title: property.title,
+      address: property.address,
+      price: String(property.price),
+      type: property.type,
+      bedrooms: String(property.bedrooms),
+      bathrooms: String(property.bathrooms),
+      sqft: String(property.sqft),
+      status: property.status,
+      agentId: property.agentId,
+      landlordId: property.landlordId,
+    });
+    setFormError(null);
+    setIsAddOpen(false);
+    setEditingProperty(property);
+  }
+
+  function closeDialogs() {
+    setIsAddOpen(false);
+    setEditingProperty(null);
+    setFormError(null);
+  }
+
+  async function submitForm() {
+    if (saving) return;
+    const payload = {
+      title: draft.title.trim(),
+      address: draft.address.trim(),
+      price: Number(draft.price),
+      type: draft.type,
+      bedrooms: Number(draft.bedrooms),
+      bathrooms: Number(draft.bathrooms),
+      sqft: Number(draft.sqft),
+      status: draft.status,
+      agentId: draft.agentId.trim(),
+      landlordId: draft.landlordId.trim(),
+    };
+    if (!payload.title || !payload.address || !Number.isFinite(payload.price) || payload.price <= 0) {
+      setFormError('Title, address, and valid price are required.');
+      return;
+    }
+    if (!payload.agentId || !payload.landlordId) {
+      setFormError('Agent ID and Landlord ID are required.');
+      return;
+    }
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editingProperty) {
+        await updateProperty(editingProperty.id, payload);
+        setProperties((rows) => rows.map((row) => (row.id === editingProperty.id ? { ...row, ...payload } : row)));
+      } else {
+        const createdAt = new Date().toISOString();
+        const id = await createProperty({
+          ...payload,
+          priceUnit: 'mo',
+          images: [],
+          createdAt,
+        });
+        setProperties((rows) => [{ id, ...payload, priceUnit: 'mo', images: [], createdAt }, ...rows]);
+      }
+      closeDialogs();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Failed to save property.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -49,9 +157,7 @@ export default function PropertiesPage() {
           <option value="2k-4k">$2,000 - $4,000</option>
           <option value="4k-plus">$4,000+</option>
         </Box>
-        <Link href="/properties/new">
-          <Button colorScheme="blue"><LuHousePlus style={{ marginRight: 6 }} />Add Property</Button>
-        </Link>
+        <Button colorScheme="blue" onClick={openAdd}><LuHousePlus style={{ marginRight: 6 }} />Add Property</Button>
       </Flex>
 
       <Flex gap={3} direction={{ base: 'column', md: 'row' }} mb={4}>
@@ -98,9 +204,12 @@ export default function PropertiesPage() {
               </Flex>
               <Flex justify="space-between" align="center">
                 <Text fontSize="42px" fontWeight="800">${property.price.toLocaleString()}</Text>
-                <Link href={`/properties/${property.id}`}>
-                  <Text color="gray.700" fontWeight="600">Details {'->'}</Text>
-                </Link>
+                <Flex gap={3} align="center">
+                  <Button size="xs" variant="outline" onClick={() => openEdit(property)}>Edit</Button>
+                  <Link href={`/properties/${property.id}`}>
+                    <Text color="gray.700" fontWeight="600">Details {'->'}</Text>
+                  </Link>
+                </Flex>
               </Flex>
             </Box>
           </Box>
@@ -113,6 +222,86 @@ export default function PropertiesPage() {
           </Button>
         </Flex>
       ) : null}
+
+      <PopupDialog isOpen={isAddOpen || !!editingProperty} title={editingProperty ? 'Edit Property' : 'Add Property'} onClose={closeDialogs}>
+        <Box display="grid" gap={3} gridTemplateColumns={{ base: '1fr', md: 'repeat(2,minmax(0,1fr))' }}>
+          <Box>
+            <Text mb={1}>Title</Text>
+            <Input value={draft.title} onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))} placeholder="Property title" />
+          </Box>
+          <Box>
+            <Text mb={1}>Address</Text>
+            <Input value={draft.address} onChange={(e) => setDraft((prev) => ({ ...prev, address: e.target.value }))} placeholder="Address" />
+          </Box>
+          <Box>
+            <Text mb={1}>Price</Text>
+            <Input value={draft.price} onChange={(e) => setDraft((prev) => ({ ...prev, price: e.target.value }))} placeholder="2500" type="number" />
+          </Box>
+          <Box>
+            <Text mb={1}>Type</Text>
+            <Box
+              as="select"
+              px={3}
+              h="40px"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              value={draft.type}
+              onChange={(e) => setDraft((prev) => ({ ...prev, type: e.target.value as 'condo' | 'apartment' | 'house' | 'office' }))}
+            >
+              <option value="condo">condo</option>
+              <option value="apartment">apartment</option>
+              <option value="house">house</option>
+              <option value="office">office</option>
+            </Box>
+          </Box>
+          <Box>
+            <Text mb={1}>Bedrooms</Text>
+            <Input value={draft.bedrooms} onChange={(e) => setDraft((prev) => ({ ...prev, bedrooms: e.target.value }))} type="number" />
+          </Box>
+          <Box>
+            <Text mb={1}>Bathrooms</Text>
+            <Input value={draft.bathrooms} onChange={(e) => setDraft((prev) => ({ ...prev, bathrooms: e.target.value }))} type="number" />
+          </Box>
+          <Box>
+            <Text mb={1}>Sqft</Text>
+            <Input value={draft.sqft} onChange={(e) => setDraft((prev) => ({ ...prev, sqft: e.target.value }))} type="number" />
+          </Box>
+          <Box>
+            <Text mb={1}>Status</Text>
+            <Box
+              as="select"
+              px={3}
+              h="40px"
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              value={draft.status}
+              onChange={(e) => setDraft((prev) => ({ ...prev, status: e.target.value as 'available' | 'rented' | 'under_review' | 'off_market' }))}
+            >
+              <option value="available">available</option>
+              <option value="rented">rented</option>
+              <option value="under_review">under_review</option>
+              <option value="off_market">off_market</option>
+            </Box>
+          </Box>
+          <Box>
+            <Text mb={1}>Agent ID</Text>
+            <Input value={draft.agentId} onChange={(e) => setDraft((prev) => ({ ...prev, agentId: e.target.value }))} />
+          </Box>
+          <Box>
+            <Text mb={1}>Landlord ID</Text>
+            <Input value={draft.landlordId} onChange={(e) => setDraft((prev) => ({ ...prev, landlordId: e.target.value }))} />
+          </Box>
+        </Box>
+        {formError ? <Text mt={3} color="red.500">{formError}</Text> : null}
+        <Flex justify="flex-end" gap={2} mt={4}>
+          <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
+          <Button colorScheme="blue" onClick={submitForm} loading={saving}>
+            {editingProperty ? 'Save Changes' : 'Create Property'}
+          </Button>
+        </Flex>
+      </PopupDialog>
     </Box>
   );
 }

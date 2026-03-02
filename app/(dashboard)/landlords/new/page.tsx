@@ -1,14 +1,19 @@
 'use client';
 
-import { Box } from '@chakra-ui/react';
-import LandlordForm from '../../../../components/landlords/LandlordForm';
-import PageHeader from '../../../../components/ui/PageHeader';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Box, Text } from '@chakra-ui/react';
 
 export default function NewLandlordPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/landlords');
+  }, [router]);
+
   return (
     <Box>
-      <PageHeader title="Add Landlord" subtitle="Create a new landlord profile" />
-      <LandlordForm />
+      <Text color="gray.600">Redirecting to Landlords...</Text>
     </Box>
   );
 }
