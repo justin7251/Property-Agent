@@ -5,9 +5,10 @@ import { InquiryStatus } from '../../types/inquiry';
 
 const colorByStatus: Record<InquiryStatus, { bg: string; fg: string }> = {
   new: { bg: '#DBEAFE', fg: '#1D4ED8' },
-  in_progress: { bg: '#FEF3C7', fg: '#A16207' },
-  resolved: { bg: '#DCFCE7', fg: '#166534' },
-  closed: { bg: '#E5E7EB', fg: '#374151' },
+  approved: { bg: '#E0F2FE', fg: '#0C4A6E' },
+  rejected: { bg: '#FEE2E2', fg: '#991B1B' },
+  contacted: { bg: '#FEF3C7', fg: '#92400E' },
+  converted: { bg: '#DCFCE7', fg: '#166534' },
 };
 
 export default function InquiryStatusBadge({ status }: { status: InquiryStatus }) {
