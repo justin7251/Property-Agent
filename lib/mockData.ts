@@ -33,14 +33,14 @@ export const properties: Property[] = [
 ];
 
 export const inquiries: Inquiry[] = [
-  { id: 'i1', clientName: 'Sarah Johnson', clientEmail: 'sarah.client@mail.com', propertyId: 'p1', propertyTitle: 'Luxury Condo', agentId: 'a1', status: 'new', message: 'Can I schedule a viewing this Friday?', date: '2026-02-01' },
-  { id: 'i2', clientName: 'Michael Chen', clientEmail: 'mchen.client@mail.com', propertyId: 'p3', propertyTitle: 'Riverfront Loft', agentId: 'a3', status: 'in_progress', message: 'Interested in lease terms and parking.', date: '2026-02-02' },
-  { id: 'i3', clientName: 'Joy Hduson', clientEmail: 'joy.h@mail.com', propertyId: 'p8', propertyTitle: 'Metro Apartment', agentId: 'a4', status: 'resolved', message: 'Could you share utility costs?', date: '2026-02-03' },
-  { id: 'i4', clientName: 'Data K Plea', clientEmail: 'data.k@mail.com', propertyId: 'p4', propertyTitle: 'Elm Townhouse', agentId: 'a4', status: 'new', message: 'Need pet policy details.', date: '2026-02-04' },
-  { id: 'i5', clientName: 'Maila Luson', clientEmail: 'maila.client@mail.com', propertyId: 'p5', propertyTitle: 'Central Office Suite', agentId: 'a1', status: 'closed', message: 'Signed contract, thanks.', date: '2026-02-05' },
-  { id: 'i6', clientName: 'Grew Ciltan', clientEmail: 'grew@mail.com', propertyId: 'p10', propertyTitle: 'Union Office Floor', agentId: 'a5', status: 'in_progress', message: 'Requesting floor plan and availability.', date: '2026-02-06' },
-  { id: 'i7', clientName: 'Lucia Tiide', clientEmail: 'lucia@mail.com', propertyId: 'p9', propertyTitle: 'Cedar Condo', agentId: 'a3', status: 'new', message: 'Can we negotiate the rent?', date: '2026-02-07' },
-  { id: 'i8', clientName: 'Michael Kort', clientEmail: 'mkort@mail.com', propertyId: 'p7', propertyTitle: 'Parkside House', agentId: 'a2', status: 'resolved', message: 'Thanks, all questions answered.', date: '2026-02-08' },
+  { id: 'i1', clientName: 'Sarah Johnson', clientEmail: 'sarah.client@mail.com', propertyId: 'p1', propertyTitle: 'Luxury Condo', agentId: 'a1', inquiryType: 'lead', status: 'new', message: 'Can I schedule a viewing this Friday?', date: '2026-02-01' },
+  { id: 'i2', clientName: 'Michael Chen', clientEmail: 'mchen.client@mail.com', propertyId: 'p3', propertyTitle: 'Riverfront Loft', agentId: 'a3', inquiryType: 'lead', status: 'approved', message: 'Interested in lease terms and parking.', date: '2026-02-02' },
+  { id: 'i3', clientName: 'Joy Hduson', clientEmail: 'joy.h@mail.com', propertyId: 'p8', propertyTitle: 'Metro Apartment', agentId: 'a4', inquiryType: 'lead', status: 'converted', message: 'Could you share utility costs?', date: '2026-02-03' },
+  { id: 'i4', clientName: 'Data K Plea', clientEmail: 'data.k@mail.com', propertyId: 'p4', propertyTitle: 'Elm Townhouse', agentId: 'a4', inquiryType: 'lead', status: 'new', message: 'Need pet policy details.', date: '2026-02-04' },
+  { id: 'i5', clientName: 'Maila Luson', clientEmail: 'maila.client@mail.com', propertyId: 'p5', propertyTitle: 'Central Office Suite', agentId: 'a1', inquiryType: 'lead', status: 'converted', message: 'Signed contract, thanks.', date: '2026-02-05' },
+  { id: 'i6', clientName: 'Grew Ciltan', clientEmail: 'grew@mail.com', propertyId: 'p10', propertyTitle: 'Union Office Floor', agentId: 'a5', inquiryType: 'lead', status: 'contacted', message: 'Requesting floor plan and availability.', date: '2026-02-06' },
+  { id: 'i7', clientName: 'Lucia Tiide', clientEmail: 'lucia@mail.com', propertyId: 'p9', propertyTitle: 'Cedar Condo', agentId: 'a3', inquiryType: 'maintenance', maintenanceDecision: 'pending', status: 'new', message: 'Kitchen sink pipe is leaking since yesterday.', date: '2026-02-07' },
+  { id: 'i8', clientName: 'Michael Kort', clientEmail: 'mkort@mail.com', propertyId: 'p7', propertyTitle: 'Parkside House', agentId: 'a2', inquiryType: 'lead', status: 'rejected', message: 'Thanks, all questions answered.', date: '2026-02-08' },
 ];
 
 export const revenueReports: RevenueReport[] = [

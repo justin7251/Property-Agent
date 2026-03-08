@@ -82,6 +82,16 @@ Type-check:
 npx tsc --noEmit
 ```
 
+## Security
+
+- API hardening checklist: `API_SECURITY_CHECKLIST.md`.
+- Company API key auth for imports: `COMPANY_API_KEYS.md`.
+- Env hygiene check:
+
+```bash
+npm run security:check-env
+```
+
 ## Current Caveat
 
 If `next build` fails with `spawn EPERM` in your local environment, it is an OS/process permission issue in that environment, not a TypeScript compile error (TS checks currently pass).
